@@ -2,11 +2,16 @@
 import os,subprocess
 import sys
 
-VERBOSE = True 
+VERBOSE = True
 logs = sys.stdout
 
+pathDirs = os.path.relpath(__file__).split('/')
+camrPath = ""
+for i in range(0, len(pathDirs)-1):
+    camrPath = camrPath + pathDirs[i] + "/"
+
 class DepParser(object):
-    
+
     def __init__(self):
         pass
 
@@ -16,7 +21,7 @@ class DepParser(object):
 
 
 class CharniakParser(DepParser):
-    
+
     def parse(self,sent_filename):
         """
         use Charniak parser to parse sentences then convert results to Stanford Dependency
@@ -41,18 +46,18 @@ class CharniakParser(DepParser):
                     parsed_trees = rrp.simple_parse(l.strip().split())
                 except IndexError:
                     parsed_trees = rrp.simple_parse(l.strip().split()[:64])
-                    
+
                 parsed_trees += '\n'
                 of.write(parsed_trees)
 
-        
+
         # convert parse tree to dependency tree
         print "Convert Charniak parse tree to Stanford Dependency tree ..."
-        subprocess.call('./scripts/stdconvert.sh '+parsed_filename,shell=True)
-        
+        # subprocess.call('./scripts/stdconvert.sh '+parsed_filename,shell=True)
+        subprocess.call(camrPath+'scripts/stdconvert.sh '+parsed_filename,shell=True)
 
 class StanfordDepParser(DepParser):
-    
+
     def parse(self,sent_filename):
         """
         separate dependency parser
@@ -60,11 +65,11 @@ class StanfordDepParser(DepParser):
 
         jars = ["stanford-parser-3.3.1-models.jar",
                 "stanford-parser.jar"]
-       
+
         # if CoreNLP libraries are in a different directory,
         # change the corenlp_path variable to point to them
         stanford_path = "/home/j/llc/cwang24/R_D/AMRParsing/stanfordnlp/stanford-parser/"
-        
+
         java_path = "java"
         classname = "edu.stanford.nlp.parser.lexparser.LexicalizedParser"
         # include the properties file, so you can change defaults
@@ -83,11 +88,11 @@ class StanfordDepParser(DepParser):
         # spawn the server
         start_depparser = "%s -Xmx2500m -cp %s %s %s %s %s" % (java_path, ':'.join(jars), classname, flags, model, sent_filename)
         if VERBOSE: print start_depparser
-        #incoming = pexpect.run(start_depparser)    
+        #incoming = pexpect.run(start_depparser)
         process = subprocess.Popen(start_depparser.split(),shell=False,stdout=subprocess.PIPE)
         incoming = process.communicate()[0]
         print 'Incoming',incoming
-        
+
         return incoming
 
 
@@ -100,7 +105,7 @@ class ClearDepParser(DepParser):
 
         clear_path="/home/j/llc/cwang24/Tools/clearnlp"
         extension = "clear.dep"
-        
+
         start_depparser = "%s/clearnlp-parse %s %s" % (clear_path,sent_filename,extension)
         print start_depparser
         extcode = subprocess.call(start_depparser,shell=True)
@@ -109,7 +114,7 @@ class ClearDepParser(DepParser):
         return dep_result
 
 class TurboDepParser(DepParser):
-    
+
     def parse(self,sent_filename):
         turbo_path="/home/j/llc/cwang24/Tools/TurboParser"
         extension = "turbo.dep"
@@ -122,7 +127,7 @@ class TurboDepParser(DepParser):
 
 
 class MateDepParser(DepParser):
-    
+
     def parse(self,sent_filename):
         mate_path="/home/j/llc/cwang24/Tools/MateParser"
         extension = "mate.dep"
